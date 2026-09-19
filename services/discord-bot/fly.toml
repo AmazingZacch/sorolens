@@ -1,0 +1,41 @@
+# Fly.io app config for the Sorolens contributor bot.
+# See https://fly.io/docs/reference/configuration/ for the full reference.
+#
+# Deploy from services/discord-bot with:
+#     fly launch --no-deploy    # first time, edit values below, then:
+#     fly deploy
+
+app = "sorolens-discord-bot"
+primary_region = "iad"
+
+[build]
+  dockerfile = "Dockerfile"
+
+[env]
+  PORT = "8080"
+  DATABASE_PATH = "/data/mappings.db"
+
+# Persist the SQLite mapping file across deploys.
+[mounts]
+  source = "sorolens_bot_data"
+  destination = "/data"
+
+# HTTP service for the GitHub webhook receiver.
+[http_service]
+  internal_port = 8080
+  force_https = true
+  auto_stop_machines = "off"       # bot must stay online for Discord gateway
+  auto_start_machines = true
+  min_machines_running = 1
+
+  [[http_service.checks]]
+    interval = "30s"
+    timeout = "5s"
+    grace_period = "10s"
+    method = "GET"
+    path = "/healthz"
+
+[[vm]]
+  memory = "256mb"
+  cpu_kind = "shared"
+  cpus = 1
